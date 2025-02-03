@@ -4,9 +4,9 @@
     <meta charset="utf-8">
   </head>
   <body>
-    <h2>Bonjour ,</h2>
+    <h2>Bonjour {{$user->firstname}},</h2>
     <p>Votre code d'activation est :</p> <br>
-    <strong>{{$code}}</strong>
+    <strong>{{$user->activation_code}}</strong>
     <p>Cordialement,</p>
     <p>Account Management</p>
   </body>

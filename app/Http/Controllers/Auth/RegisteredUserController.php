@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
 use Illuminate\View\View;
+use App\Mail\ActivationMail;
 use Illuminate\Http\Request;
-use App\Mail\MailNotification;
 use Illuminate\Validation\Rules;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Auth\Events\Registered;
+use App\Providers\RouteServiceProvider;
 
 class RegisteredUserController extends Controller
 {
@@ -29,11 +30,9 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
-        //dd($request->all());
         $request->validate([
-            'firstname' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -44,32 +43,37 @@ class RegisteredUserController extends Controller
             'firstname' => $request->firstname,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'activation_code' => mt_rand(100000, 999999),
         ]);
 
-        //event(new Registered($user));
+        //$user->assignRole("CLIENT");
 
         //Envoie du code d'activation
-        Mail::to('jyagbessi@gmail.com')
-            ->queue(new MailNotification('23456'));
+        Mail::to($user->email)
+            ->queue(new ActivationMail($user));
 
-        Auth::login($user);
+        $userId=$user->id;
 
-        return redirect(route('dashboard', absolute: false));
+        //Auth::login($user);
+        flash()->success('Task completed successfully.');
+        return view('auth.confirm-code',compact('userId'))->with('success', "Le code d'activation est envoyé par mail !");
     }
 
-    /**
-     * Display the registration view.
-     */
-    public function confirmation(): View
+    
+    public function activation(Request $request)
     {
-        return view('auth.confirm-code');
-    }
-
-    /**
-     * Display the registration view.
-     */
-    public function activation(): View
-    {
-        return view('auth.confirm-code');
+        $user=User::find($request->user);
+        if ($user && $user->activation_code==$request->activation_code) {
+            $user->update([
+                'is_active'=>true,
+                'email_verified_at'=>date('Y-m-d')
+            ]);
+            return redirect('dashboard')->with('success', "Votre compte est activé avec succès !");
+        } else {
+            $userId=$user->id;
+            flash()->error("Le code n'est pas correcte !");
+            return view('auth.confirm-code',compact('userId'));
+            return redirect('activation',compact('user'));
+        }
     }
 }

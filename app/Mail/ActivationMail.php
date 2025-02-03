@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -10,17 +11,17 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class MailNotification extends Mailable
+class ActivationMail extends Mailable
 {
     use Queueable, SerializesModels;
-    public $code;
+    public $user;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($code)
+    public function __construct(User $user)
     {
-        $this->code = $code;
+        $this->user = $user;
     }
 
     /**
